@@ -18,6 +18,9 @@ fun matrix(vararg e: Number): Matrix {
  * Добавляем возможность обращаться к матрицам при помощи двух индексов через запятую: А[i, j]
  */
 operator fun Matrix.get(i: Int, j: Int) = this[i][j]
+operator fun Matrix.set(i: Int, j: Int, value: Number) {
+    this[i][j] = value.toFloat()
+}
 
 /**
  * Функция для преобразования матрицы в текст (чтоб можно было напечатать в консоли)
@@ -39,15 +42,45 @@ fun println(matrix: Matrix) = println(matrix.asString())
 /**
  * LU-разложение матрицы
  */
-//fun Matrix.LUDecompose(): Pair<Matrix, Matrix> {
-//
-//}
+fun Matrix.LUDecomposition(): Pair<Matrix, Matrix> {
+    val A = this
+    val L = Array(size) { Array(size) { 0f } } // заполняем нулями
+    val U = Array(size) { Array(size) { 0f } } // заполняем нулями
+
+    for (j in 0 until size) {
+        for (i in 0..j) {
+            for (i_2 in 0..j) {
+                U[i_2, j] = A[i_2, j]
+                for (j_2 in 0 until i_2) {
+                    U[i_2, j] -= L[i_2, j_2] * U[j_2, j]
+                }
+            }
+            for (i_2 in j until size) {
+                L[i_2, j] = A[i_2, j]
+                for (j_2 in 0 until j) {
+                    L[i_2, j] -= L[i_2, j_2] * U[j_2, j]
+                }
+                L[i_2, j] /= U[i, j]
+            }
+        }
+
+    }
+    return Pair(L, U)
+}
 
 fun main() {
+    // исходная матрица
     val A = matrix(
-        1.555,  2, 3,
-        4,      5, 6,
-        7,      8, 9
+        4,    8,    12,   -4,    2,
+        8,    20,   12,   -6,    0,
+       -8,   -8,   -39,    18,  -21,
+        8,    12,   54,    3,   -9,
+       -4,    0,   -63,   -9,    19
     )
     println(A)
+    val (L, U) = A.LUDecomposition()
+    print("L ")
+    println(L)
+    print("U ")
+    println(U)
 }
