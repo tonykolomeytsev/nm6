@@ -23,6 +23,13 @@ operator fun Matrix.set(i: Int, j: Int, value: Number) {
 }
 
 /**
+ * Умножение матриц
+ */
+fun matmul(A: Matrix, B: Matrix): Matrix {
+    return matrix(1, 2, 3, 4)
+}
+
+/**
  * Функция для преобразования матрицы в текст (чтоб можно было напечатать в консоли)
  */
 fun Matrix.asString(): String {
@@ -42,7 +49,7 @@ fun println(matrix: Matrix) = println(matrix.asString())
 /**
  * LU-разложение матрицы
  */
-fun Matrix.LUDecomposition(): Pair<Matrix, Matrix> {
+fun Matrix.decomposeLU(): Pair<Matrix, Matrix> {
     val A = this
     val L = Array(size) { Array(size) { 0f } } // заполняем нулями
     val U = Array(size) { Array(size) { 0f } } // заполняем нулями
@@ -68,17 +75,51 @@ fun Matrix.LUDecomposition(): Pair<Matrix, Matrix> {
     return Pair(L, U)
 }
 
+/**
+ * Разложение Холецкого
+ */
+fun Matrix.cholesky(): Pair<Matrix, Matrix> {
+    val A = this
+    val L = Array(size) { Array(size) { 0f } } // заполняем нулями
+    val T = Array(size) { Array(size) { 0f } } // заполняем нулями
+
+
+
+    return Pair(L, T)
+}
+
 fun main() {
+    demoLU()
+}
+
+fun demoCholesky() {
     // исходная матрица
     val A = matrix(
-        4,    8,    12,   -4,    2,
-        8,    20,   12,   -6,    0,
-       -8,   -8,   -39,    18,  -21,
-        8,    12,   54,    3,   -9,
-       -4,    0,   -63,   -9,    19
+        4, 8, 12, -4, 2,
+        8, 20, 12, -6, 0,
+        -8, -8, -39, 18, -21,
+        8, 12, 54, 3, -9,
+        -4, 0, -63, -9, 19
     )
     println(A)
-    val (L, U) = A.LUDecomposition()
+    val (L, T) = A.cholesky()
+    print("L ")
+    println(L)
+    print("T ")
+    println(T)
+}
+
+fun demoLU() {
+    // исходная матрица
+    val A = matrix(
+        4, 8, 12, -4, 2,
+        8, 20, 12, -6, 0,
+        -8, -8, -39, 18, -21,
+        8, 12, 54, 3, -9,
+        -4, 0, -63, -9, 19
+    )
+    println(A)
+    val (L, U) = A.decomposeLU()
     print("L ")
     println(L)
     print("U ")
