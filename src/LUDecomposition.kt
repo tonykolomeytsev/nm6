@@ -9,7 +9,7 @@ typealias Matrix = Array<Array<Float>>
  * Конструктор для упрощенного создания матрицы (только квадратной)
  */
 fun matrix(vararg e: Number): Matrix {
-    val size = sqrt(e.size.toDouble()).toInt()
+    val size = sqrt(e.size.toFloat()).toInt()
     var i = 0
     return Array(size) { Array(size) {e[i++].toFloat()} }
 }
@@ -26,9 +26,23 @@ operator fun Matrix.set(i: Int, j: Int, value: Number) {
  * Умножение матриц
  */
 fun matmul(A: Matrix, B: Matrix): Matrix {
-    return matrix(1, 2, 3, 4)
+    if (A.size != B.size) throw ArithmeticException("Matrix sizes does not equal")
+    val C = Array(A.size) { Array(A.size) { 0f } }
+
+    for (i in 0 until A.size) {
+        for (j in 0 until A.size) {
+            for (k in 0 until A.size) {
+                C[i, j] += A[i, k] * B[k, j]
+            }
+        }
+    }
+
+    return C
 }
 
+/**
+ * Транспонирование матриц
+ */
 fun Matrix.transpose(): Matrix {
     val m = Array(size) { Array(size) { 0f } }
     for (i in 0 until size) {
@@ -112,7 +126,14 @@ fun Matrix.cholesky(): Matrix {
 }
 
 fun main() {
-    demoCholesky()
+    val L1 = matrix(
+        1, 0, 0, 0,
+        2, 1, 0, 0,
+        3, 1, 2, 0,
+        4, -5, -3, 3
+    )
+    val L2 =  L1.transpose()
+    println(matmul(L1, L2))
 }
 
 fun demoCholesky() {
