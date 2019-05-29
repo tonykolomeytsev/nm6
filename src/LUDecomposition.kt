@@ -29,6 +29,16 @@ fun matmul(A: Matrix, B: Matrix): Matrix {
     return matrix(1, 2, 3, 4)
 }
 
+fun Matrix.transpose(): Matrix {
+    val m = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            m[i, j] = this[j, i]
+        }
+    }
+    return m
+}
+
 /**
  * Функция для преобразования матрицы в текст (чтоб можно было напечатать в консоли)
  */
@@ -78,35 +88,47 @@ fun Matrix.decomposeLU(): Pair<Matrix, Matrix> {
 /**
  * Разложение Холецкого
  */
-fun Matrix.cholesky(): Pair<Matrix, Matrix> {
+fun Matrix.cholesky(): Matrix {
     val A = this
     val L = Array(size) { Array(size) { 0f } } // заполняем нулями
-    val T = Array(size) { Array(size) { 0f } } // заполняем нулями
 
+    for (j in 0 until size) {
+        L[j, j] = A[j, j]
+        for (i in 0 until j) {
+            L[j, j] -= L[j, i] * L[j, i]
+        }
+        L[j, j] = sqrt(L[j, j])
 
+        for (i in (j+1) until size) {
+            L[i, j] = A[i, j]
+            for (j_2 in 0 until j) {
+                L[i, j] -= L[i, j_2] * L[j, j_2]
+            }
+            L[i, j] /= L[j, j]
+        }
+    }
 
-    return Pair(L, T)
+    return L
 }
 
 fun main() {
-    demoLU()
+    demoCholesky()
 }
 
 fun demoCholesky() {
     // исходная матрица
     val A = matrix(
-        4, 8, 12, -4, 2,
-        8, 20, 12, -6, 0,
-        -8, -8, -39, 18, -21,
-        8, 12, 54, 3, -9,
-        -4, 0, -63, -9, 19
+        1,  2,  3,  4,
+        2,  5,  7,  3,
+        3,  7, 14,  1,
+        4,  3,  1, 59
     )
     println(A)
-    val (L, T) = A.cholesky()
+    val L = A.cholesky()
     print("L ")
     println(L)
-    print("T ")
-    println(T)
+    print("L^T ")
+    println(L.transpose())
 }
 
 fun demoLU() {
