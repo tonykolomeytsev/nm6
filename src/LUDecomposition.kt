@@ -125,15 +125,59 @@ fun Matrix.cholesky(): Matrix {
     return L
 }
 
+fun generateForCholesky(size: Int): Pair<Matrix, Matrix> {
+    val variables = arrayOf(-5, -4, -3, -2, -1, 1, 1, 1, 1, 2, 2, 3, 3, 4, 5)
+    val L = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0..i) {
+            L[i, j] = variables.random()
+        }
+    }
+    return Pair(L, matmul(L, L.transpose()))
+}
+
+fun generateForLU(size: Int): Triple<Matrix, Matrix, Matrix> {
+    val variables = arrayOf(-5, -4, -3, -2, -1, 1, 1, 1, 1, 2, 2, 3, 3, 4, 5)
+    val L = Array(size) { Array(size) { 0f } }
+    val U = Array(size) { Array(size) { 0f } }
+
+    for (i in 0 until size) {
+        for (j in 0 until i) {
+            L[i, j] = variables.random()
+        }
+        L[i, i] = 1
+    }
+
+    for (i in 0 until size) {
+        for (j in i until size) {
+            U[i, j] = variables.random()
+        }
+    }
+    return Triple(matmul(L, U), L, U)
+}
+
+
 fun main() {
-    val L1 = matrix(
-        1, 0, 0, 0,
-        2, 1, 0, 0,
-        3, 1, 2, 0,
-        4, -5, -3, 3
-    )
-    val L2 =  L1.transpose()
-    println(matmul(L1, L2))
+    repeat(3) {
+        val (L, A) = generateForCholesky(4)
+        println("\nРазложение Холецкого ${it+1}\n")
+
+        print("Задача: А ")
+        println(A)
+        print("Ответ: L ")
+        println(L)
+    }
+    repeat(3) {
+        val (A, L, U) = generateForLU(4)
+        println("\nLU-разложение ${it+1}\n")
+
+        print("Задача: А ")
+        println(A)
+        print("Ответ: L ")
+        println(L)
+        print("Ответ: U ")
+        println(U)
+    }
 }
 
 fun demoCholesky() {
