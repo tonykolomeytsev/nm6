@@ -52,12 +52,13 @@ operator fun Matrix.set(i: Int, j: Int, value: Number) {
  * Умножение матриц
  */
 fun matmul(A: Matrix, B: Matrix): Matrix {
-    if (A.size != B.size) throw ArithmeticException("Matrix sizes does not equal")
-    val C = Array(A.size) { Array(A.size) { 0f } }
+    if (A.size().second != B.size().first) throw ArithmeticException("Matrix sizes does not equal")
+    val newSize = Size(A.size().first, B.size().second)
+    val C = Array(newSize.first) { Array(newSize.first) { 0f } }
 
-    for (i in 0 until A.size) {
-        for (j in 0 until A.size) {
-            for (k in 0 until A.size) {
+    for (i in 0 until newSize.first) {
+        for (j in 0 until newSize.second) {
+            for (k in 0 until A.size().second) {
                 C[i, j] += A[i, k] * B[k, j]
             }
         }
@@ -122,6 +123,8 @@ operator fun Number.rem(another: Matrix): Matrix {
     }
     return C
 }
+
+// еще арифметика
 
 operator fun Matrix.times(another: Number): Matrix {
     val C = Array(size) { Array(size) { 0f } }
@@ -188,6 +191,7 @@ operator fun Matrix.plus(another: Number): Matrix {
 }
 
 operator fun Matrix.plus(another: Matrix): Matrix {
+    if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
     val C = Array(size) { Array(size) { 0f } }
     for (i in 0 until size) {
         for (j in 0 until size) {
@@ -208,6 +212,7 @@ operator fun Matrix.minus(another: Number): Matrix {
 }
 
 operator fun Matrix.minus(another: Matrix): Matrix {
+    if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
     val C = Array(size) { Array(size) { 0f } }
     for (i in 0 until size) {
         for (j in 0 until size) {
@@ -226,6 +231,7 @@ operator fun Matrix.plusAssign(another: Number) {
 }
 
 operator fun Matrix.plusAssign(another: Matrix) {
+    if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
     for (i in 0 until size) {
         for (j in 0 until size) {
             this[i, j] += another[i, j]
@@ -242,6 +248,7 @@ operator fun Matrix.minusAssign(another: Number) {
 }
 
 operator fun Matrix.minusAssign(another: Matrix) {
+    if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
     for (i in 0 until size) {
         for (j in 0 until size) {
             this[i, j] -= another[i, j]
@@ -253,9 +260,10 @@ operator fun Matrix.minusAssign(another: Matrix) {
  * Транспонирование матриц
  */
 fun Matrix.transposed(): Matrix {
-    val m = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val newSize = Size(size().second, size().first)
+    val m = zeros(newSize)
+    for (i in 0 until newSize.first) {
+        for (j in 0 until newSize.second) {
             m[i, j] = this[j, i]
         }
     }
@@ -263,6 +271,7 @@ fun Matrix.transposed(): Matrix {
 }
 
 fun Matrix.transpose() {
+    if (size().first != size().second) throw ArithmeticException("In-place transpose only for square matrix")
     for (i in 0 until size) {
         for (j in i until size) {
             val temp = this[i, j]
@@ -276,9 +285,10 @@ fun Matrix.transpose() {
  * Функция для преобразования матрицы в текст (чтоб можно было напечатать в консоли)
  */
 fun Matrix.asString(): String {
-    var s = "Matrix (${size}x$size):\n"
-    for (i in 0 until this.size) {
-        for (j in 0 until this.size) {
+    val z = size()
+    var s = "Matrix (${z.first}x${z.second}):\n"
+    for (i in 0 until z.first) {
+        for (j in 0 until z.second) {
             val x = String.format("%1$10s", this[i, j])
             s += "$x "
         }
@@ -346,50 +356,20 @@ fun Matrix.decomposeCholesky(): Matrix {
     return L
 }
 
-fun generateForCholesky(size: Int): Pair<Matrix, Matrix> {
-    val variables = arrayOf(-5, -4, -3, -2, -1, 1, 1, 1, 1, 2, 2, 3, 3, 4, 5)
-    val L = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0..i) {
-            L[i, j] = variables.random()
-        }
-    }
-    val A = matmul(L, L.transposed())
-    return Pair(A.decomposeCholesky(), A)
-}
-
-fun generateForLU(size: Int): Triple<Matrix, Matrix, Matrix> {
-    val variables = arrayOf(-5, -4, -3, -2, -1, 1, 1, 1, 1, 2, 2, 3, 3, 4, 5)
-    val L = Array(size) { Array(size) { 0f } }
-    val U = Array(size) { Array(size) { 0f } }
-
-    for (i in 0 until size) {
-        for (j in 0 until i) {
-            L[i, j] = variables.random()
-        }
-        L[i, i] = 1
-    }
-
-    for (i in 0 until size) {
-        for (j in i until size) {
-            U[i, j] = variables.random()
-        }
-    }
-    val A = matmul(L, U)
-    val (testL, testU) = A.decomposeLU()
-    return Triple(A, testL, testU)
-}
 
 
 fun main() {
-    val A = matrix(
-        1, 2, 3, 4,
-        5, 6, 7, 8,
-        9, 10, 11, 12,
-        13, 14, 15, 16
+    val A = matrix(Size(2, 3),
+        2, -3, 1,
+            5, 4, -2
+
     )
-    println(A)
-    A.transpose()
-    println(A)
+    val B = matrix(Size(3, 2),
+        -7, 5,
+            2, -1,
+            4, 3
+    )
+    println(matmul(A,B))
     println(A.transposed())
+
 }
