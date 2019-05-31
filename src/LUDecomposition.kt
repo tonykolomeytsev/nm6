@@ -4,15 +4,41 @@ import kotlin.math.sqrt
  * Матрица это массив из массивов вещественных чисел
  */
 typealias Matrix = Array<Array<Float>>
-
+typealias Size = Pair<Int, Int>
 /**
- * Конструктор для упрощенного создания матрицы (только квадратной)
+ * Конструктор для упрощенного создания квадратной матрицы
  */
 fun matrix(vararg e: Number): Matrix {
     val size = sqrt(e.size.toFloat()).toInt()
     var i = 0
     return Array(size) { Array(size) {e[i++].toFloat()} }
 }
+
+/**
+ * Конструктор для создания матрицы произвольной формы
+ */
+fun matrix(size: Size, vararg e: Number): Matrix {
+    var i = 0
+    return Array(size.first) { Array(size.second) {e[i++].toFloat()} }
+}
+
+/**
+ * Конструктор для создания матрицы, заполненной указанными значениями зависящими от i, j
+ */
+fun matrix(size: Size, lambda: (Int, Int) -> Float = { _,_-> 0f })
+        = Array(size.first) { i -> Array(size.second) { j -> lambda(i, j) }  }
+
+/**
+ * Конструктор для создания матрицы, заполненной указанными константами
+ */
+fun matrix(size: Size, lambda: () -> Float = { 0f })
+        = Array(size.first) { Array(size.second) { lambda() }  }
+
+fun ones(size: Size) = Array(size.first) { Array(size.second) { 1f }  }
+
+fun zeros(size: Size) = Array(size.first) { Array(size.second) { 0f }  }
+
+fun Matrix.size() = Size(size, this[0].size)
 
 /**
  * Добавляем возможность обращаться к матрицам при помощи двух индексов через запятую: А[i, j]
@@ -40,10 +66,193 @@ fun matmul(A: Matrix, B: Matrix): Matrix {
     return C
 }
 
+// арифметика
+
+operator fun Number.plus(another: Matrix): Matrix {
+    val size = another.size()
+    val C = zeros(size)
+    for (i in 0 until size.first) {
+        for (j in 0 until size.second) {
+            C[i, j] = another[i, j] + this.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Number.minus(another: Matrix): Matrix {
+    val size = another.size()
+    val C = zeros(size)
+    for (i in 0 until size.first) {
+        for (j in 0 until size.second) {
+            C[i, j] = another[i, j] - this.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Number.times(another: Matrix): Matrix {
+    val size = another.size()
+    val C = zeros(size)
+    for (i in 0 until size.first) {
+        for (j in 0 until size.second) {
+            C[i, j] = another[i, j] * this.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Number.div(another: Matrix): Matrix {
+    val size = another.size()
+    val C = zeros(size)
+    for (i in 0 until size.first) {
+        for (j in 0 until size.second) {
+            C[i, j] = another[i, j] / this.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Number.rem(another: Matrix): Matrix {
+    val size = another.size()
+    val C = zeros(size)
+    for (i in 0 until size.first) {
+        for (j in 0 until size.second) {
+            C[i, j] = another[i, j] % this.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Matrix.times(another: Number): Matrix {
+    val C = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            C[i, j] = this[i, j] * another.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Matrix.timesAssign(another: Number) {
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            this[i, j] *= another.toFloat()
+        }
+    }
+}
+
+operator fun Matrix.div(another: Number): Matrix {
+    val C = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            C[i, j] = this[i, j] / another.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Matrix.divAssign(another: Number) {
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            this[i, j] /= another.toFloat()
+        }
+    }
+}
+
+operator fun Matrix.rem(another: Number): Matrix {
+    val C = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            C[i, j] = this[i, j] % another.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Matrix.remAssign(another: Number) {
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            this[i, j] %= another.toFloat()
+        }
+    }
+}
+
+operator fun Matrix.plus(another: Number): Matrix {
+    val C = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            C[i, j] = this[i, j] + another.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Matrix.plus(another: Matrix): Matrix {
+    val C = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            C[i, j] = this[i, j] + another[i, j]
+        }
+    }
+    return C
+}
+
+operator fun Matrix.minus(another: Number): Matrix {
+    val C = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            C[i, j] = this[i, j] - another.toFloat()
+        }
+    }
+    return C
+}
+
+operator fun Matrix.minus(another: Matrix): Matrix {
+    val C = Array(size) { Array(size) { 0f } }
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            C[i, j] = this[i, j] - another[i, j]
+        }
+    }
+    return C
+}
+
+operator fun Matrix.plusAssign(another: Number) {
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            this[i, j] += another.toFloat()
+        }
+    }
+}
+
+operator fun Matrix.plusAssign(another: Matrix) {
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            this[i, j] += another[i, j]
+        }
+    }
+}
+
+operator fun Matrix.minusAssign(another: Number) {
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            this[i, j] -= another.toFloat()
+        }
+    }
+}
+
+operator fun Matrix.minusAssign(another: Matrix) {
+    for (i in 0 until size) {
+        for (j in 0 until size) {
+            this[i, j] -= another[i, j]
+        }
+    }
+}
+
 /**
  * Транспонирование матриц
  */
-fun Matrix.transpose(): Matrix {
+fun Matrix.transposed(): Matrix {
     val m = Array(size) { Array(size) { 0f } }
     for (i in 0 until size) {
         for (j in 0 until size) {
@@ -51,6 +260,16 @@ fun Matrix.transpose(): Matrix {
         }
     }
     return m
+}
+
+fun Matrix.transpose() {
+    for (i in 0 until size) {
+        for (j in i until size) {
+            val temp = this[i, j]
+            this[i, j] = this[j, i]
+            this[j, i] = temp
+        }
+    }
 }
 
 /**
@@ -69,6 +288,8 @@ fun Matrix.asString(): String {
 }
 
 fun println(matrix: Matrix) = println(matrix.asString())
+
+fun print(matrix: Matrix) = print(matrix.asString())
 
 /**
  * LU-разложение матрицы
@@ -102,7 +323,7 @@ fun Matrix.decomposeLU(): Pair<Matrix, Matrix> {
 /**
  * Разложение Холецкого
  */
-fun Matrix.cholesky(): Matrix {
+fun Matrix.decomposeCholesky(): Matrix {
     val A = this
     val L = Array(size) { Array(size) { 0f } } // заполняем нулями
 
@@ -133,8 +354,8 @@ fun generateForCholesky(size: Int): Pair<Matrix, Matrix> {
             L[i, j] = variables.random()
         }
     }
-    val A = matmul(L, L.transpose())
-    return Pair(A.cholesky(), A)
+    val A = matmul(L, L.transposed())
+    return Pair(A.decomposeCholesky(), A)
 }
 
 fun generateForLU(size: Int): Triple<Matrix, Matrix, Matrix> {
@@ -161,61 +382,14 @@ fun generateForLU(size: Int): Triple<Matrix, Matrix, Matrix> {
 
 
 fun main() {
-//    val X = matrix(16,4,8,-12,4,17,-14,-23,8,-14,45,19,-12,-23,19,39)
-//    println(X.cholesky())
-//
-//    if (true) return;
-    repeat(3) {
-        val (L, A) = generateForCholesky(4)
-        println("\nРазложение Холецкого ${it+1}\n")
-
-        print("Задача: А ")
-        println(A)
-        print("Ответ: L ")
-        println(L)
-    }
-    repeat(3) {
-        val (A, L, U) = generateForLU(4)
-        println("\nLU-разложение ${it+1}\n")
-
-        print("Задача: А ")
-        println(A)
-        print("Ответ: L ")
-        println(L)
-        print("Ответ: U ")
-        println(U)
-    }
-}
-
-fun demoCholesky() {
-    // исходная матрица
     val A = matrix(
-        1,  2,  3,  4,
-        2,  5,  7,  3,
-        3,  7, 14,  1,
-        4,  3,  1, 59
+        1, 2, 3, 4,
+        5, 6, 7, 8,
+        9, 10, 11, 12,
+        13, 14, 15, 16
     )
     println(A)
-    val L = A.cholesky()
-    print("L ")
-    println(L)
-    print("L^T ")
-    println(L.transpose())
-}
-
-fun demoLU() {
-    // исходная матрица
-    val A = matrix(
-        4, 8, 12, -4, 2,
-        8, 20, 12, -6, 0,
-        -8, -8, -39, 18, -21,
-        8, 12, 54, 3, -9,
-        -4, 0, -63, -9, 19
-    )
+    A.transpose()
     println(A)
-    val (L, U) = A.decomposeLU()
-    print("L ")
-    println(L)
-    print("U ")
-    println(U)
+    println(A.transposed())
 }
