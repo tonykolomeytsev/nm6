@@ -133,7 +133,8 @@ fun generateForCholesky(size: Int): Pair<Matrix, Matrix> {
             L[i, j] = variables.random()
         }
     }
-    return Pair(L, matmul(L, L.transpose()))
+    val A = matmul(L, L.transpose())
+    return Pair(A.cholesky(), A)
 }
 
 fun generateForLU(size: Int): Triple<Matrix, Matrix, Matrix> {
@@ -153,11 +154,17 @@ fun generateForLU(size: Int): Triple<Matrix, Matrix, Matrix> {
             U[i, j] = variables.random()
         }
     }
-    return Triple(matmul(L, U), L, U)
+    val A = matmul(L, U)
+    val (testL, testU) = A.decomposeLU()
+    return Triple(A, testL, testU)
 }
 
 
 fun main() {
+//    val X = matrix(16,4,8,-12,4,17,-14,-23,8,-14,45,19,-12,-23,19,39)
+//    println(X.cholesky())
+//
+//    if (true) return;
     repeat(3) {
         val (L, A) = generateForCholesky(4)
         println("\nРазложение Холецкого ${it+1}\n")
