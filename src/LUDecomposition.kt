@@ -54,7 +54,7 @@ operator fun Matrix.set(i: Int, j: Int, value: Number) {
 fun matmul(A: Matrix, B: Matrix): Matrix {
     if (A.size().second != B.size().first) throw ArithmeticException("Matrix sizes does not equal")
     val newSize = Size(A.size().first, B.size().second)
-    val C = Array(newSize.first) { Array(newSize.first) { 0f } }
+    val C = Array(newSize.first) { Array(newSize.second) { 0f } }
 
     for (i in 0 until newSize.first) {
         for (j in 0 until newSize.second) {
@@ -66,6 +66,31 @@ fun matmul(A: Matrix, B: Matrix): Matrix {
 
     return C
 }
+
+/**
+ * Определитель
+ */
+fun det(A: Matrix): Float {
+    if (!A.isSquare()) throw ArithmeticException("Bad matrix size")
+    var sumPositive = 0f
+    var sumNegative = 0f
+
+    for (i in 0 until A.size) {
+        var localMultP = 1f
+        var localMultN = 1f
+        for (ps in 0 until A.size) {
+            val iCoord = (i + ps) % A.size
+            localMultP *= A[iCoord, ps]
+            localMultN *= A[iCoord, A.size - ps - 1]
+        }
+        sumPositive += localMultP
+        sumNegative += localMultN
+    }
+
+    return sumPositive - sumNegative
+}
+
+fun Matrix.determinant() = det(this)
 
 // арифметика
 
@@ -127,9 +152,10 @@ operator fun Number.rem(another: Matrix): Matrix {
 // еще арифметика
 
 operator fun Matrix.times(another: Number): Matrix {
-    val C = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             C[i, j] = this[i, j] * another.toFloat()
         }
     }
@@ -137,17 +163,19 @@ operator fun Matrix.times(another: Number): Matrix {
 }
 
 operator fun Matrix.timesAssign(another: Number) {
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             this[i, j] *= another.toFloat()
         }
     }
 }
 
 operator fun Matrix.div(another: Number): Matrix {
-    val C = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             C[i, j] = this[i, j] / another.toFloat()
         }
     }
@@ -155,17 +183,19 @@ operator fun Matrix.div(another: Number): Matrix {
 }
 
 operator fun Matrix.divAssign(another: Number) {
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             this[i, j] /= another.toFloat()
         }
     }
 }
 
 operator fun Matrix.rem(another: Number): Matrix {
-    val C = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             C[i, j] = this[i, j] % another.toFloat()
         }
     }
@@ -173,17 +203,19 @@ operator fun Matrix.rem(another: Number): Matrix {
 }
 
 operator fun Matrix.remAssign(another: Number) {
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             this[i, j] %= another.toFloat()
         }
     }
 }
 
 operator fun Matrix.plus(another: Number): Matrix {
-    val C = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             C[i, j] = this[i, j] + another.toFloat()
         }
     }
@@ -192,9 +224,10 @@ operator fun Matrix.plus(another: Number): Matrix {
 
 operator fun Matrix.plus(another: Matrix): Matrix {
     if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
-    val C = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             C[i, j] = this[i, j] + another[i, j]
         }
     }
@@ -202,9 +235,10 @@ operator fun Matrix.plus(another: Matrix): Matrix {
 }
 
 operator fun Matrix.minus(another: Number): Matrix {
-    val C = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             C[i, j] = this[i, j] - another.toFloat()
         }
     }
@@ -213,9 +247,10 @@ operator fun Matrix.minus(another: Number): Matrix {
 
 operator fun Matrix.minus(another: Matrix): Matrix {
     if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
-    val C = Array(size) { Array(size) { 0f } }
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             C[i, j] = this[i, j] - another[i, j]
         }
     }
@@ -223,8 +258,9 @@ operator fun Matrix.minus(another: Matrix): Matrix {
 }
 
 operator fun Matrix.plusAssign(another: Number) {
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             this[i, j] += another.toFloat()
         }
     }
@@ -232,16 +268,18 @@ operator fun Matrix.plusAssign(another: Number) {
 
 operator fun Matrix.plusAssign(another: Matrix) {
     if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             this[i, j] += another[i, j]
         }
     }
 }
 
 operator fun Matrix.minusAssign(another: Number) {
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             this[i, j] -= another.toFloat()
         }
     }
@@ -249,8 +287,9 @@ operator fun Matrix.minusAssign(another: Number) {
 
 operator fun Matrix.minusAssign(another: Matrix) {
     if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
-    for (i in 0 until size) {
-        for (j in 0 until size) {
+    val s = size()
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
             this[i, j] -= another[i, j]
         }
     }
@@ -300,6 +339,13 @@ fun Matrix.asString(): String {
 fun println(matrix: Matrix) = println(matrix.asString())
 
 fun print(matrix: Matrix) = print(matrix.asString())
+
+fun Matrix.toFloat(): Float {
+    if (size() != Size(1,1)) throw ArithmeticException("Matrix is not a scalar (size != 1x1)")
+    return this[0, 0]
+}
+
+fun Matrix.isSquare() = (size == this[0].size)
 
 /**
  * LU-разложение матрицы
@@ -359,17 +405,11 @@ fun Matrix.decomposeCholesky(): Matrix {
 
 
 fun main() {
-    val A = matrix(Size(2, 3),
-        2, -3, 1,
-            5, 4, -2
-
+    val A = matrix(
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9
     )
-    val B = matrix(Size(3, 2),
-        -7, 5,
-            2, -1,
-            4, 3
-    )
-    println(matmul(A,B))
-    println(A.transposed())
-
+    println(A )
+    println(det(A))
 }
