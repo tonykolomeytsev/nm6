@@ -1,4 +1,5 @@
-import kotlin.math.sqrt
+import kotlin.math.*
+import kotlin.random.Random
 
 /**
  * Матрица это массив из массивов вещественных чисел
@@ -34,10 +35,57 @@ fun matrix(size: Size, lambda: (Int, Int) -> Float = { _,_-> 0f })
 fun matrix(size: Size, lambda: () -> Float = { 0f })
         = Array(size.first) { Array(size.second) { lambda() }  }
 
+/**
+ * Матрица заполненная единицами
+ */
 fun ones(size: Size) = Array(size.first) { Array(size.second) { 1f }  }
 
+/**
+ * Матрица заполненная нулями
+ */
 fun zeros(size: Size) = Array(size.first) { Array(size.second) { 0f }  }
 
+/**
+ * Единичная матрица
+ */
+fun eye(size: Size) = Array(size.first) { i -> Array(size.second) { j -> if (i == j) 1f else 0f }  }
+
+/**
+ * Матрица заполненная числами из диапазона
+ */
+fun randomRange(size: Size, range: IntRange): Matrix {
+    val digits = range.asSequence().toList()
+    return matrix(size) { _,_-> digits.random().toFloat() }
+}
+
+/**
+ * Матрица заполненная рандомными числами от 0 до 1
+ */
+fun random(size: Size): Matrix {
+    val r = Random(System.currentTimeMillis())
+    return matrix(size) { _,_-> r.nextFloat() }
+}
+
+/**
+ * Диагональная матрица
+ */
+fun diag(vararg numbers: Number, size: Size? = null): Matrix {
+    val s = size ?: Size(numbers.size, numbers.size)
+    val m = zeros(s)
+    for (i in 0 until numbers.size) {
+        m[i, i] = numbers[i].toFloat()
+    }
+    return m
+}
+
+fun copy(matrix: Matrix): Matrix {
+    val size = matrix.size()
+    return Array(size.first) { i -> Array(size.second) { j -> matrix[i, j] }  }
+}
+
+/**
+ * Размер матрицы
+ */
 fun Matrix.size() = Size(size, this[0].size)
 
 /**
@@ -75,6 +123,10 @@ fun det(A: Matrix): Float {
     var sumPositive = 0f
     var sumNegative = 0f
 
+    if (A.size == 1) return A.toFloat()
+
+    if (A.size == 2) return A[0, 0]*A[1, 1]-A[0, 1]*A[1, 0]
+
     for (i in 0 until A.size) {
         var localMultP = 1f
         var localMultN = 1f
@@ -91,6 +143,251 @@ fun det(A: Matrix): Float {
 }
 
 fun Matrix.determinant() = det(this)
+
+/**
+ * Минор
+ */
+fun Matrix.minor(i_: Int, j_: Int): Float {
+    if (!isSquare()) throw ArithmeticException("Non-square matrix")
+    val s = Size(size - 1, size - 1)
+    val M = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
+            M[i, j] = this[if (i < i_) i else i + 1, if (j < j_) j else j + 1]
+        }
+    }
+    return det(M)
+}
+
+/**
+ * Алгебраическое дополнение (кофактор)
+ */
+fun Matrix.cofactor(i_: Int, j_: Int): Float {
+    if (!isSquare()) throw ArithmeticException("Non-square matrix")
+    val s = Size(size - 1, size - 1)
+    val M = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
+            M[i, j] = this[if (i < i_) i else i + 1, if (j < j_) j else j + 1]
+        }
+    }
+    return det(M) * (if ((i_+j_) % 2 == 0) 1f else -1f)
+}
+
+/**
+ * Присоединенная матрица (матрица кофакторов)
+ */
+fun Matrix.cofactorMatrix(): Matrix = matrix(size()) { i, j -> this.cofactor(i,j) }
+
+/**
+ * Обратная матрица
+ */
+fun Matrix.inversed(): Matrix {
+    val d = det(this)
+    if (d == 0f) throw ArithmeticException("Det = 0, inverse matrix does not exist")
+    return (this.cofactorMatrix() / d)
+}
+
+/**
+ * Вычисление норм матрицы
+ */
+fun norm(matrix: Matrix, type: Any? = "inf"): Float {
+    when (type) {
+        1 -> {
+            var max = 0f
+            for (j in 0 until matrix[0].size) {
+                var sum = 0f
+                for (i in 0 until matrix.size)
+                    sum += abs(matrix[i ,j])
+                if (sum > max) max = sum
+            }
+            return max
+        }
+        2 -> {
+            TODO("Spectral norma")
+        }
+        "inf" -> {
+            var max = 0f
+            for (i in 0 until matrix.size) {
+                var sum = 0f
+                for (j in 0 until matrix[0].size)
+                    sum += abs(matrix[i ,j])
+                if (sum > max) max = sum
+            }
+            return max
+        }
+    }
+    throw ArithmeticException("Undefined norma type")
+}
+
+/**
+ * Обусловленность матрицы
+ */
+fun cond(matrix: Matrix): Float = norm(matrix) * norm(matrix.inversed())
+fun Matrix.condition() = cond(this)
+
+/**
+ * Степень обусловленности матрицы
+ */
+fun dcond(matrix: Matrix): Float = 1f / cond(matrix)
+fun Matrix.conditionDegree() = dcond(this)
+
+fun Matrix.givensRotation(): Matrix {
+    val A = copy(this)
+    for (i in 0 until (size - 1)) {
+        for (j in (i+2) until size)
+        {
+            val t = 2*A[i, j] / (A[i, i] - A[j, j])
+            val phi = 0.5 * atan(t)
+            val c = cos(phi)
+            val s = sin(phi)
+
+            val bii = c*c* A[i, i] + 2*c*s*A[i, j] + s*s*A[j, j]
+            val bij = s*c*(A[j, j] - A[i, i]) + A[i, j] * (c*c - s*s)
+            val bjj = s*s*A[i, i] + c*c*A[j, j] - 2*c*s*A[i, j]
+            val bji = bij
+
+            A[i, i] = bii
+            A[i, j] = bij
+            A[j, i] = bji
+            A[j, j] = bjj
+        }
+    }
+    return A
+}
+
+fun Matrix.filtered(f: Float = 10e-5f) = matrix(size()) { i, j -> if (this[i, j] < f) 0f else this[i, j] }
+
+/**
+ * Проверка на нижнетреугольность
+ */
+fun Matrix.isLowerTriangle(): Boolean {
+    val s = size()
+    var i = 0
+    var j: Int
+    while (i < s.first - 1) {
+        j = i+1
+        while (j < s.second) {
+            if (this[i, j] != 0f) return false
+            j++
+        }
+        i++
+    }
+    return true
+}
+
+/**
+ * Проверка на верхнетреугольность
+ */
+fun Matrix.isUpperTriangle(): Boolean {
+    val s = size()
+    var i = 0
+    var j: Int
+    while (i < s.first - 1) {
+        j = i+1
+        while (j < s.second) {
+            if (this[j, i] != 0f) return false
+            j++
+        }
+        i++
+    }
+    return true
+}
+
+/**
+ * Проверка на диагональность
+ */
+fun Matrix.isDiagonal(): Boolean {
+    val s = size()
+    var i = 0
+    var j: Int
+    while (i < s.first) {
+        j = 0
+        while (j < s.second) {
+            if (this[j, i] != 0f && j != i) return false
+            j++
+        }
+        i++
+    }
+    return true
+}
+
+/**
+ * Проверка на симметричность
+ */
+fun Matrix.isSymmetric(): Boolean {
+    val s = size()
+    var i = 0
+    var j: Int
+    while (i < s.first - 1) {
+        j = i+1
+        while (j < s.second) {
+            if (this[i, j] != this[j, i]) return false
+            j++
+        }
+        i++
+    }
+    return true
+}
+
+/**
+ * Проверка на ортогональность по необходимому и достаточному условию
+ */
+fun Matrix.isOrthogonal(): Boolean = matmul(this.transposed(), this).isEye()
+
+/**
+ * Проверка на единичность
+ */
+fun Matrix.isEye(): Boolean {
+    var i = 0
+    val s= size().min()
+    while (i < s) {
+        if (this[i, i] != 1f) return false
+        i++
+    }
+    return isDiagonal()
+}
+
+/**
+ * Сравнение двух матриц
+ */
+fun Matrix.equalsMatrix(another: Matrix): Boolean {
+    val s = size()
+    var i = 0
+    var j: Int
+    while (i < s.first) {
+        j = 0
+        while (j < s.second) {
+            if (this[i, j] != another[i, j]) return false
+            j++
+        }
+        i++
+    }
+    return true
+}
+
+/**
+ * Приведение к скаляру матрицы размера 1х1
+ */
+fun Matrix.toFloat(): Float {
+    if (size() != Size(1,1)) throw ArithmeticException("Matrix is not a scalar (size != 1x1)")
+    return this[0, 0]
+}
+
+/**
+ * Проверка на квадратность
+ */
+fun Matrix.isSquare() = (size == this[0].size)
+
+/**
+ * Минимальный размер матрицы
+ */
+fun Size.min() = (if (first > second) second else first)
+
+/**
+ * Максимальный размер матрицы
+ */
+fun Size.max() = (if (first > second) first else second)
 
 // арифметика
 
@@ -209,6 +506,36 @@ operator fun Matrix.remAssign(another: Number) {
             this[i, j] %= another.toFloat()
         }
     }
+}
+
+/**
+ * Поэлементное умножение (для матричного умножения используй matmul(A,B)
+ */
+operator fun Matrix.times(another: Matrix): Matrix {
+    if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
+            C[i, j] = this[i, j] * another[i, j]
+        }
+    }
+    return C
+}
+
+/**
+ * Поэлементное деление
+ */
+operator fun Matrix.div(another: Matrix): Matrix {
+    if (this.size() != another.size()) throw ArithmeticException("Matrix sizes does not equal")
+    val s = size()
+    val C = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
+            C[i, j] = this[i, j] / another[i, j]
+        }
+    }
+    return C
 }
 
 operator fun Matrix.plus(another: Number): Matrix {
@@ -340,12 +667,6 @@ fun println(matrix: Matrix) = println(matrix.asString())
 
 fun print(matrix: Matrix) = print(matrix.asString())
 
-fun Matrix.toFloat(): Float {
-    if (size() != Size(1,1)) throw ArithmeticException("Matrix is not a scalar (size != 1x1)")
-    return this[0, 0]
-}
-
-fun Matrix.isSquare() = (size == this[0].size)
 
 /**
  * LU-разложение матрицы
@@ -406,10 +727,19 @@ fun Matrix.decomposeCholesky(): Matrix {
 
 fun main() {
     val A = matrix(
-        1, 2, 3,
-        4, 5, 6,
-        7, 8, 9
+        1, 2, 3, 4,
+        0, 5, 6, 7,
+        0, 0, 9, 10,
+        11, 12, 13, 14
     )
-    println(A )
-    println(det(A))
+    val B = matrix(
+        1, 10, 100, 1001
+    )
+    val C = diag(1, 5, 9)
+
+    val D = matrix(
+        0.8, -0.6,
+        -0.6, -0.8
+    )
+    println(A.givensRotation().filtered())
 }
