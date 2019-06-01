@@ -5,22 +5,16 @@ import kotlin.random.Random
  * Матрица это массив из массивов вещественных чисел
  */
 typealias Matrix = Array<Array<Float>>
+typealias Vector = Array<Float>
 typealias Size = Pair<Int, Int>
-/**
- * Конструктор для упрощенного создания квадратной матрицы
- */
-fun matrix(vararg e: Number): Matrix {
-    val size = sqrt(e.size.toFloat()).toInt()
-    var i = 0
-    return Array(size) { Array(size) {e[i++].toFloat()} }
-}
 
 /**
  * Конструктор для создания матрицы произвольной формы
  */
-fun matrix(size: Size, vararg e: Number): Matrix {
+fun matrix(vararg e: Number, size: Size? = null): Matrix {
+    val s = size ?: { i: Int -> Size(i, i) }(sqrt(e.size.toFloat()).toInt())
     var i = 0
-    return Array(size.first) { Array(size.second) {e[i++].toFloat()} }
+    return Array(s.first) { Array(s.second) {e[i++].toFloat()} }
 }
 
 /**
@@ -61,8 +55,8 @@ fun randomRange(size: Size, range: IntRange): Matrix {
 /**
  * Матрица заполненная рандомными числами от 0 до 1
  */
-fun random(size: Size): Matrix {
-    val r = Random(System.currentTimeMillis())
+fun random(size: Size, seed: Long? = null): Matrix {
+    val r = Random(seed ?: System.currentTimeMillis())
     return matrix(size) { _,_-> r.nextFloat() }
 }
 
@@ -78,6 +72,13 @@ fun diag(vararg numbers: Number, size: Size? = null): Matrix {
     return m
 }
 
+fun tril(size: Size) = matrix(size) { i, j -> if (i >= j) 1f else 0f }
+
+fun triu(size: Size) = matrix(size) { i, j -> if (i <= j) 1f else 0f }
+
+/**
+ * Копия матрицы
+ */
 fun copy(matrix: Matrix): Matrix {
     val size = matrix.size()
     return Array(size.first) { i -> Array(size.second) { j -> matrix[i, j] }  }
@@ -95,6 +96,10 @@ operator fun Matrix.get(i: Int, j: Int) = this[i][j]
 operator fun Matrix.set(i: Int, j: Int, value: Number) {
     this[i][j] = value.toFloat()
 }
+
+fun Matrix.column(j: Int) = Vector(size) { i -> this[i, j] }
+
+fun Matrix.row(i: Int): Vector = this[i]
 
 /**
  * Умножение матриц
@@ -145,7 +150,7 @@ fun det(A: Matrix): Float {
 fun Matrix.determinant() = det(this)
 
 /**
- * Минор
+ * Минор (определитель матрицы-минора)
  */
 fun Matrix.minor(i_: Int, j_: Int): Float {
     if (!isSquare()) throw ArithmeticException("Non-square matrix")
@@ -157,6 +162,21 @@ fun Matrix.minor(i_: Int, j_: Int): Float {
         }
     }
     return det(M)
+}
+
+/**
+ * Матрица-минор без вычисления определителя
+ */
+fun Matrix.minorMatrix(i_: Int, j_: Int): Matrix {
+    if (!isSquare()) throw ArithmeticException("Non-square matrix")
+    val s = Size(size - 1, size - 1)
+    val M = zeros(s)
+    for (i in 0 until s.first) {
+        for (j in 0 until s.second) {
+            M[i, j] = this[if (i < i_) i else i + 1, if (j < j_) j else j + 1]
+        }
+    }
+    return M
 }
 
 /**
@@ -257,6 +277,33 @@ fun Matrix.givensRotation(): Matrix {
 }
 
 fun Matrix.filtered(f: Float = 10e-5f) = matrix(size()) { i, j -> if (this[i, j] < f) 0f else this[i, j] }
+
+
+
+fun Matrix.floor() = Array(size) { i -> Array(this[0].size) { j -> floor(this[i, j]) } }
+
+fun Matrix.ceil() = Array(size) { i -> Array(this[0].size) { j -> ceil(this[i, j]) } }
+
+fun Matrix.round() = Array(size) { i -> Array(this[0].size) { j -> round(this[i, j]) } }
+
+fun Matrix.sqrt() = Array(size) { i -> Array(this[0].size) { j -> sqrt(this[i, j]) } }
+
+fun Matrix.sin() = Array(size) { i -> Array(this[0].size) { j -> sin(this[i, j]) } }
+
+fun Matrix.cos() = Array(size) { i -> Array(this[0].size) { j -> cos(this[i, j]) } }
+
+fun Matrix.pow(power: Float) = Array(size) { i -> Array(this[0].size) { j -> Math.pow(this[i, j].toDouble(), power.toDouble()).toFloat() } }
+
+fun Matrix.matMap(function: (Float) -> Float) = Array(size) { i -> Array(this[0].size) { j -> function(this[i, j]) } }
+
+fun Matrix.matMap(function: (Int, Int, Float) -> Float) = Array(size) { i -> Array(this[0].size) { j -> function(i, j, this[i, j]) } }
+
+fun Matrix.matForEach(function: (Int, Int, Float) -> Unit) {
+    val s = size()
+    for (i in 0 until s.first)
+        for (j in 0 until s.second)
+            function(i, j, this[i, j])
+}
 
 /**
  * Проверка на нижнетреугольность
@@ -370,7 +417,7 @@ fun Matrix.equalsMatrix(another: Matrix): Boolean {
  * Приведение к скаляру матрицы размера 1х1
  */
 fun Matrix.toFloat(): Float {
-    if (size() != Size(1,1)) throw ArithmeticException("Matrix is not a scalar (size != 1x1)")
+    if (size() != Size(1,1)) throw ArithmeticException("Matrix is not re scalar (size != 1x1)")
     return this[0, 0]
 }
 
@@ -423,6 +470,8 @@ operator fun Number.times(another: Matrix): Matrix {
     }
     return C
 }
+
+operator fun Number.times(another: Vector): Vector = Vector(another.size) { i -> another[i] * this.toFloat() }
 
 operator fun Number.div(another: Matrix): Matrix {
     val size = another.size()
@@ -538,6 +587,10 @@ operator fun Matrix.div(another: Matrix): Matrix {
     return C
 }
 
+operator fun Vector.div(another: Vector): Vector = this.mapIndexed { i, e -> e / another[i] }.toTypedArray()
+
+operator fun Vector.div(another: Number): Vector = this.map { e -> e / another.toFloat() }.toTypedArray()
+
 operator fun Matrix.plus(another: Number): Matrix {
     val s = size()
     val C = zeros(s)
@@ -561,6 +614,8 @@ operator fun Matrix.plus(another: Matrix): Matrix {
     return C
 }
 
+operator fun Vector.plus(another: Vector): Vector = this.mapIndexed { i, e -> e + another[i] }.toTypedArray()
+
 operator fun Matrix.minus(another: Number): Matrix {
     val s = size()
     val C = zeros(s)
@@ -583,6 +638,8 @@ operator fun Matrix.minus(another: Matrix): Matrix {
     }
     return C
 }
+
+operator fun Vector.minus(another: Vector): Vector = this.mapIndexed { i, e -> e - another[i] }.toTypedArray()
 
 operator fun Matrix.plusAssign(another: Number) {
     val s = size()
@@ -724,22 +781,74 @@ fun Matrix.decomposeCholesky(): Matrix {
 }
 
 
-
-fun main() {
-    val A = matrix(
-        1, 2, 3, 4,
-        0, 5, 6, 7,
-        0, 0, 9, 10,
-        11, 12, 13, 14
-    )
-    val B = matrix(
-        1, 10, 100, 1001
-    )
-    val C = diag(1, 5, 9)
-
-    val D = matrix(
-        0.8, -0.6,
-        -0.6, -0.8
-    )
-    println(A.givensRotation().filtered())
+fun Vector.norm(type: Any? = 2): Float {
+    when (type) {
+        1 -> return this.reduce { acc, fl -> acc + abs(fl) }
+        2 -> return sqrt(this.reduce { acc, fl -> acc + fl*fl })
+        "inf" -> return this.maxBy { abs(it) }!!
+    }
+    throw ArithmeticException("Undefined norma type")
 }
+
+/**
+ * QR-разложение, возвращает Q, R
+ */
+fun Matrix.decomposeQR(): Pair<Matrix, Matrix> {
+    val compute_minor = { mat: Matrix, d: Int ->
+        val A = zeros(mat.size())
+        for (i in 0 until d)
+            A[i, i] = 1f
+        for (i in d until mat.size)
+            for (j in d until mat[0].size)
+                A[i, j] = mat[i, j]
+        A
+    }
+    val sign = { a: Float -> if (a > 0) 1f else -1f }
+
+    val n = size().first
+    val m = size().second
+
+    val qv = Array<Matrix?>(m) { null }
+    var z = copy(this)
+
+    var k = 0
+    while (k < n && k < m - 1) {
+        val a = z.column(k)
+        val e = Vector(n) { i -> if (i == k) 1f else 0f }
+        val u = a + (sign(a[0]) * a.norm() * e)
+        val v = u / u[0]
+        val vTv = v.reduce { acc, fl -> acc + fl*fl }
+
+        // compute householder factor Q = I - 2*v*v^T
+        qv[k] = eye(Size(n, n)) - 2*matrix(Size(n, n)) { i, j -> v[i] * v[j] } / vTv
+
+        z = matmul(qv[k]!!, z)
+        k++
+    }
+
+    var Q = qv[0]!!
+
+    var i = 1
+    while (i < n && i < m - 1) {
+        Q = matmul(qv[i]!!, Q)
+        i++
+    }
+
+    val R = matmul(Q, this)
+    return Pair(Q.transposed(), R)
+}
+
+/**
+ * Возвращает U, S, V (транспонируешь сам)
+ */
+fun Matrix.decomposeSVD(): Triple<Matrix, Matrix, Matrix> {
+    val s = size()
+    val A = this
+    val H = zeros(s)// Householder matrix
+    val U = zeros(Size(s.first, s.first))
+    val S = zeros(s)
+    val V = zeros(Size(s.second, s.second))
+    return Triple(U, S, V)
+}
+
+
