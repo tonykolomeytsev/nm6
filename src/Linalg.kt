@@ -794,48 +794,41 @@ fun Vector.norm(type: Any? = 2): Float {
  * QR-разложение, возвращает Q, R
  */
 fun Matrix.decomposeQR(): Pair<Matrix, Matrix> {
-    val compute_minor = { mat: Matrix, d: Int ->
-        val A = zeros(mat.size())
-        for (i in 0 until d)
-            A[i, i] = 1f
-        for (i in d until mat.size)
-            for (j in d until mat[0].size)
-                A[i, j] = mat[i, j]
-        A
-    }
-    val sign = { a: Float -> if (a > 0) 1f else -1f }
 
     val n = size().first
     val m = size().second
+    val minSize = size().min()
 
-    val qv = Array<Matrix?>(m) { null }
-    var z = copy(this)
-
-    var k = 0
-    while (k < n && k < m - 1) {
-        val a = z.column(k)
-        val e = Vector(n) { i -> if (i == k) 1f else 0f }
-        val u = a + (sign(a[0]) * a.norm() * e)
-        val v = u / u[0]
-        val vTv = v.reduce { acc, fl -> acc + fl*fl }
-
-        // compute householder factor Q = I - 2*v*v^T
-        qv[k] = eye(Size(n, n)) - 2*matrix(Size(n, n)) { i, j -> v[i] * v[j] } / vTv
-
-        z = matmul(qv[k]!!, z)
-        k++
+    val H = mutableListOf<Matrix>()
+    var accH = eye(Size(n, n))
+    var A = this
+    val convertH = { H_: Matrix, iter: Int ->
+        val H: Matrix = zeros(Size(n, n))
+        H_.matForEach { i, j, e ->
+            H[i + iter, j + iter] = e
+        }
+        for (i in 0 until iter) {
+            H[i, i] = 1f
+        }
+        H
     }
 
-    var Q = qv[0]!!
+    for (j in 0 until minSize) {
+        // x = column of A
+        val u = A.column(j).sliceArray(j until n)
+        // u = x - x', where x' is vector with first element ||x||
+        u[0] -= u.norm()
 
-    var i = 1
-    while (i < n && i < m - 1) {
-        Q = matmul(qv[i]!!, Q)
-        i++
+        val newSize = Size(u.size, u.size) // длина столбца равна высоте текущей матрицы
+        // H_ = I - 2(u*u^T)/(u^T*u)
+        val H_ = (eye(newSize) - (2*matrix(newSize) { i, j -> u[i] * u[j]}) / (u.reduce { acc, fl -> acc+fl*fl }) )
+        val H_final = convertH(H_, j)
+        H += H_final
+        accH = matmul(H_final, accH)
+        A = matmul(accH, A)
     }
 
-    val R = matmul(Q, this)
-    return Pair(Q.transposed(), R)
+    return Pair(accH.transposed(), A)
 }
 
 /**
