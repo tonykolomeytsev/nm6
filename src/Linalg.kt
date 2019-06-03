@@ -29,6 +29,10 @@ fun matrix(size: Size, lambda: (Int, Int) -> Float = { _,_-> 0f })
 fun matrix(size: Size, lambda: () -> Float = { 0f })
         = Array(size.first) { Array(size.second) { lambda() }  }
 
+fun matrix(vector: Vector) = matrix(*vector, size = Size(1, vector.size))
+
+fun vector(vararg e: Number): Vector = e.map { it.toFloat() }.toTypedArray()
+
 /**
  * Матрица заполненная единицами
  */
@@ -704,6 +708,8 @@ fun Matrix.transpose() {
     }
 }
 
+fun Vector.transposed(): Matrix = matrix(*this, size = Size(this.size, 1))
+
 /**
  * Функция для преобразования матрицы в текст (чтоб можно было напечатать в консоли)
  */
@@ -720,10 +726,23 @@ fun Matrix.asString(): String {
     return s
 }
 
+fun Vector.asString(): String {
+    var s = "Matrix (1x$size):\n"
+    for (j in 0 until size) {
+        val x = String.format("%1$10s", this[j])
+        s += "$x "
+    }
+    s += "\n"
+    return s
+}
+
 fun println(matrix: Matrix) = println(matrix.asString())
 
 fun print(matrix: Matrix) = print(matrix.asString())
 
+fun println(vector: Vector) = println(vector.asString())
+
+fun print(vector: Vector) = print(vector.asString())
 
 /**
  * LU-разложение матрицы
